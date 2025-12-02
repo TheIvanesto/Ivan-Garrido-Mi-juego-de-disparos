@@ -1,0 +1,8 @@
+{
+  "version": 2,
+  "routes": [
+    { "handle": "filesystem" },
+    { "src": "/service-worker.js", "dest": "/sw.js" },
+    { "src": "/(.*)", "dest": "/index.html" }
+  ]
+}
