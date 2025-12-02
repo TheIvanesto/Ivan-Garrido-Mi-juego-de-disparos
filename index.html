@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Shooter Game</title>
+  <meta name="theme-color" content="#000000">
+  <link rel="manifest" href="./manifest.json">
+  <style>
+/* inlined from game.css */
+html { overflow: hidden; }
+body { background: #000; color: #fff; margin: 0; }
+.Opponent { animation: rotation 3s infinite linear; -webkit-animation: rotation 3s infinite linear; }
+.paused .Opponent { animation: none; -webkit-animation: none; }
+@-webkit-keyframes rotation { from { transform: rotate(0deg); -webkit-transform: rotate(0deg); } to { transform: rotate(359deg); -webkit-transform: rotate(359deg); } }
+.gamebutton { border: none; background: #ddd; color: #333; padding: 10px 20px; outline: none; font-family: monospace; cursor: pointer; }
+#debug-overlay { position: fixed; left: 8px; right: 8px; bottom: 8px; background: rgba(0,0,0,0.85); color: #ff6b6b; padding: 12px; border: 1px solid #ff6b6b; font-family: monospace; font-size: 13px; z-index: 9999; white-space: pre-wrap; max-height: 40vh; overflow: auto; }
+  </style>
+</head>
+
+<body>
+  <button id="installButton" class="gamebutton" style="display:none;" onclick="this.blur();">Instalar</button>
+  <button id="pause" class="gamebutton" onclick="this.blur();">Pausa</button>
+  <button id="reset" class="gamebutton" onclick="this.blur();">NUEVA PARTIDA</button>
+  <script>
+  // --- inlined constants & helpers (from main.js top) ---
+  const OPPONENT_HEIGHT = 5,
+      OPPONENT_PICTURE = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64"><rect width="100%" height="100%" fill="red"/></svg>',
+      OPPONENT_PICTURE_DEAD = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64"><rect width="100%" height="100%" fill="#660000"/></svg>',
+      OPPONENT_SPEED = 5,
+      OPPONENT_WIDTH = 5,
+      GAME_OVER_PICTURE = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="256" height="128"><rect width="100%" height="100%" fill="#000"/><text x="50%" y="50%" fill="#fff" font-size="20" text-anchor="middle" dominant-baseline="middle">GAME OVER</text></svg>',
+      KEY_LEFT = "LEFT",
+      KEY_RIGHT = "RIGHT",
+      KEY_SHOOT = "SHOOT",
+      MIN_TOUCHMOVE = 20,
+      PLAYER_HEIGHT = 5,
+      PLAYER_PICTURE = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64"><rect width="100%" height="100%" fill="yellow"/></svg>',
+      PLAYER_PICTURE_DEAD = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64"><rect width="100%" height="100%" fill="#666600"/></svg>',
+      PLAYER_SPEED = 20,
+      PLAYER_WIDTH = 5,
+      SHOT_HEIGHT = 1.5,
+      SHOT_SPEED = 20,
+      SHOT_PICTURE_PLAYER = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"><rect width="100%" height="100%" fill="#fff"/></svg>',
+      SHOT_PICTURE_OPPONENT = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"><rect width="100%" height="100%" fill="#f00"/></svg>',
+      SHOT_WIDTH = 1.5;
+
+  function getRandomNumber (range) { return Math.floor(Math.random() * range); }
+
+  function collision (div1, div2) { const a = div1.getBoundingClientRect(), b = div2.getBoundingClientRect(); return !(a.bottom < b.top || a.top > b.bottom || a.right < b.left || a.left > b.right); }
+
+  // --- Entity.js ---
+  class Entity { constructor (game, width, height, x, y, speed, myImage) { this.game = game; this.width = width; this.height = height; this.x = x; this.y = y; this.speed = speed; this.myImage = myImage; this.image = new Image(); this.image.src = this.myImage; this.image.className = this.constructor.name; this.image.style.position = "absolute"; this.image.style.height = this.height === "auto" ? "auto" : `${this.height}px`; this.image.style.width = this.width === "auto" ? "auto" : `${this.width}px`; this.image.style.top = `${this.y}px`; this.image.style.left = `${this.x}px`; document.body.appendChild(this.image); } remove() { document.body.removeChild(this.image); } render () { this.image.style.top = `${this.y}px`; this.image.style.left = `${this.x}px`; } }
+
+  // --- Character.js ---
+  class Character extends Entity { constructor (game, width, height, x, y, speed, myImage, myImageDead) { super(game, width, height, x, y, speed, myImage); this.dead = false; this.myImageDead = myImageDead; } collide() { this.image.src = this.myImageDead; this.dead = true; } }
+
+  // --- Shot.js ---
+  class Shot extends Entity { constructor (game, character) { const width = SHOT_WIDTH * game.width / 100; const height = SHOT_HEIGHT * game.width / 100; const x = character.x + character.width / 2 - width / 2; const y = character.y + character.height - character.height / 2; const speed = SHOT_SPEED; const myImage = character instanceof Player ? SHOT_PICTURE_PLAYER : SHOT_PICTURE_OPPONENT; super(game, width, height, x, y, speed, myImage); this.type = character instanceof Player ? "PLAYER" : "ENEMY"; } update () { if (this.type === "PLAYER") { this.y = this.y - this.speed; } else { this.y = this.y + this.speed; } if (this.y < 0 || this.y > this.game.height) { this.game.removeShot(this); document.body.removeChild(this.image); } } }
+
+  // --- Player.js ---
+  class Player extends Character { constructor (game) { const height = PLAYER_HEIGHT * game.width / 100, width = PLAYER_WIDTH * game.width / 100, x = game.width / 2 - width / 2, y = game.height - height, speed = PLAYER_SPEED, myImage = PLAYER_PICTURE, myImageDead = PLAYER_PICTURE_DEAD; super(game, width, height, x, y, speed, myImage, myImageDead); } update () { if (!this.dead) { switch (this.game.keyPressed) { case KEY_LEFT: if (this.x > this.speed) { this.x -= this.speed; } break; case KEY_RIGHT: if (this.x < this.game.width - this.width - this.speed) { this.x += this.speed; } break; case KEY_SHOOT: this.game.shoot(this); break; } } } collide() { if (!this.dead) { setTimeout(() => { this.game.endGame(); }, 2000); super.collide(); } } }
+
+  // --- Opponent.js ---
+  class Opponent extends Character { constructor (game) { const height = OPPONENT_HEIGHT * game.width / 100, width = OPPONENT_WIDTH * game.width / 100, x = getRandomNumber(game.width - width / 2), y = 0, speed = OPPONENT_SPEED, myImage = OPPONENT_PICTURE, myImageDead = OPPONENT_PICTURE_DEAD; super(game, width, height, x, y, speed, myImage, myImageDead); this.direction = "R"; setTimeout(() => this.shoot(), 1000 + getRandomNumber(2500)); this.horizontalMov = getRandomNumber(game.width / 2); } shoot () { if (!this.dead && !this.game.ended) { if (!this.game.paused) { this.game.shoot(this); } setTimeout(() => this.shoot(), 1000 + getRandomNumber(2500)); } } update () { if (!this.dead && !this.game.ended) { this.y += this.speed; if (this.y > this.game.height) { this.y = 0; } if (this.direction === "R") { if (this.x < this.game.width - this.width - this.speed) { this.x += this.speed; } else { this.horizontalMov = 0; } } else if (this.x > this.speed) { this.x -= this.speed; } else { this.horizontalMov = 0; } this.horizontalMov -= this.speed; if (this.horizontalMov < this.speed) { this.horizontalMov = getRandomNumber(this.game.width / 2); this.direction = this.direction === "R" ? "L" : "R"; } } } collide() { if (!this.dead) { setTimeout(() => { this.game.removeOpponent(); }, 2000); super.collide(); } } }
+
+  // --- Game.js ---
+  class Game { constructor () { this.started = false; this.ended = false; this.keyPressed = undefined; this.width = 0; this.height = 0; this.player = undefined; this.playerShots = []; this.opponent = undefined; this.opponentShots = []; this.xDown = null; this.paused = false; } start () { if (!this.started) { window.addEventListener("keydown", (e) => this.checkKey(e, true)); window.addEventListener("keyup", (e) => this.checkKey(e, false)); window.addEventListener("touchstart", (e) => this.handleTouchStart(e, true)); window.addEventListener("touchmove", (e) => this.handleTouchMove(e, false)); document.getElementById("pause").addEventListener("click", () => { this.pauseOrResume(); }); document.getElementById("reset").addEventListener("click", () => { this.resetGame(); }); this.started = true; this.width = window.innerWidth; this.height = window.innerHeight; this.player = new Player(this); this.timer = setInterval(() => this.update(), 50); } } pauseOrResume() { if (this.paused) { this.timer = setInterval(() => this.update(), 50); document.body.classList.remove('paused'); this.paused = false; } else { clearInterval(this.timer); document.body.classList.add('paused'); this.paused = true; } } shoot (character) { const arrayShots = character instanceof Player ? this.playerShots : this.opponentShots; arrayShots.push(new Shot(this, character)); this.keyPressed = undefined; } removeShot (shot) { const shotsArray = shot.type === "PLAYER" ? this.playerShots : this.opponentShots, index = shotsArray.indexOf(shot); if (index > -1) { shotsArray.splice(index, 1); } } removeOpponent () { if (this.opponent) { document.body.removeChild(this.opponent.image); } this.opponent = new Opponent(this); } checkKey (event, isKeyDown) { if (!isKeyDown) { this.keyPressed = undefined; } else { switch (event.keyCode) { case 37: this.keyPressed = KEY_LEFT; break; case 32: this.keyPressed = KEY_SHOOT; break; case 39: this.keyPressed = KEY_RIGHT; break; case 27: case 81: this.pauseOrResume(); } } } getTouches (evt) { return evt.touches || evt.originalEvent.touches; } handleTouchStart (evt) { const firstTouch = this.getTouches(evt)[0]; this.xDown = firstTouch.clientX; this.keyPressed = KEY_SHOOT; } handleTouchMove (evt) { if (!this.xDown) { return; } const xUp = evt.touches[0].clientX, xDiff = this.xDown - xUp; if (xDiff > MIN_TOUCHMOVE) { this.keyPressed = KEY_LEFT; } else if (xDiff < -MIN_TOUCHMOVE) { this.keyPressed = KEY_RIGHT; } else { this.keyPressed = KEY_SHOOT; } this.xDown = null; } checkCollisions () { let impact = false; for (let i = 0; i < this.opponentShots.length; i++) { impact = impact || this.hasCollision(this.player, this.opponentShots[i]); } if (impact || this.hasCollision(this.player, this.opponent)) { this.player.collide(); } let killed = false; for (let i = 0; i < this.playerShots.length; i++) { killed = killed || this.hasCollision(this.opponent, this.playerShots[i]); } if (killed) { this.opponent.collide(); } } hasCollision (item1, item2) { if (item2 === undefined) { return false; } const b1 = item1.y + item1.height, r1 = item1.x + item1.width, b2 = item2.y + item2.height, r2 = item2.x + item2.width; if (b1 < item2.y || item1.y > b2 || r1 < item2.x || item1.x > r2) { return false; } return true; } endGame () { this.ended = true; let gameOver = new Entity(this, this.width / 2, "auto", this.width / 4, this.height / 4, 0, GAME_OVER_PICTURE); gameOver.render(); } resetGame () { document.location.reload(); } update () { if (!this.ended) { this.player.update(); if (this.opponent === undefined) { this.opponent = new Opponent(this); } this.opponent.update(); this.playerShots.forEach((shot) => { shot.update(); }); this.opponentShots.forEach((shot) => { shot.update(); }); this.checkCollisions(); this.render(); } } render () { this.player.render(); if (this.opponent !== undefined) { this.opponent.render(); } this.playerShots.forEach((shot) => { shot.render(); }); this.opponentShots.forEach((shot) => { shot.render(); }); }
+
+  // --- initialization and PWA handlers (from bottom of main.js) ---
+  var game;
+  function showDebugOverlay(msg) { let el = document.getElementById('debug-overlay'); if (!el) { el = document.createElement('div'); el.id = 'debug-overlay'; document.body.appendChild(el); } el.textContent = msg; }
+  window.addEventListener('error', (e) => { const msg = `Error: ${e.message}\nAt: ${e.filename}:${e.lineno}:${e.colno}`; console.error(msg); try { showDebugOverlay(msg); } catch (err) {} });
+  window.addEventListener('unhandledrejection', (ev) => { const reason = ev.reason ? (ev.reason.stack || ev.reason) : 'Unknown rejection'; const msg = `Unhandled Rejection:\n${reason}`; console.error(msg); try { showDebugOverlay(msg); } catch (err) {} });
+
+  const ENABLE_SERVICE_WORKER = true;
+  if (ENABLE_SERVICE_WORKER && 'serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js').then(registration => { console.log('Service Worker registrado con éxito:', registration); }).catch(error => { console.error('Error al registrar el Service Worker:', error); }); }
+
+  let deferredPrompt;
+  window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredPrompt = e; const installButton = document.getElementById('installButton'); if (installButton) { installButton.style.display = 'inline-block'; if (!installButton.dataset.handler) { installButton.addEventListener('click', async () => { installButton.style.display = 'none'; deferredPrompt.prompt(); const choiceResult = await deferredPrompt.userChoice; if (choiceResult.outcome === 'accepted') { console.log('Usuario aceptó la instalación'); } else { console.log('Usuario rechazó la instalación'); } deferredPrompt = null; }); installButton.dataset.handler = 'true'; } } });
+  window.addEventListener('appinstalled', () => { console.log('PWA instalada'); const installButton = document.getElementById('installButton'); if (installButton) installButton.style.display = 'none'; });
+
+  function initGame() { try { game = new Game(); game.start(); } catch (err) { console.error('Error iniciando el juego:', err); try { showDebugOverlay('Error iniciando el juego: ' + (err.stack || err.message)); } catch(e){} } }
+  if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', initGame); } else { initGame(); }
+  </script>
+</body>
+
+</html>
