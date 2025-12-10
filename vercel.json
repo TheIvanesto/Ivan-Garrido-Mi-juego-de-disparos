@@ -1,0 +1,15 @@
+{
+  "version": 2,
+  "routes": [
+    { "handle": "filesystem" },
+
+    { "src": "/sw.js", "dest": "/sw.js" },
+    { "src": "/manifest.json", "dest": "/manifest.json" },
+
+    { "src": "/(.*\\..*)", "dest": "/$1" },
+    { "src": "/(.*\\..*)", "dest": "/juego_entrega/$1" },
+
+    { "src": "/(.*)", "dest": "/index.html" },
+    { "src": "/(.*)", "dest": "/juego_entrega/index.html" }
+  ]
+}
