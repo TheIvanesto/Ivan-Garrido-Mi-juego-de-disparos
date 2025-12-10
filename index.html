@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <title>Shooter Game</title>
+  <meta name="theme-color" content="#000000">
+  <link rel="manifest" href="./manifest.json">
+  <link rel="stylesheet" href="./game.css" type="text/css">
+</head>
+
+<body>
+  <div id="topbar">
+    <div class="left-controls">
+      <button id="pause" class="gamebutton" onclick="this.blur();">Pausa</button>
+      <button id="reset" class="gamebutton" onclick="this.blur();">NUEVA PARTIDA</button>
+      <button id="installButton" class="gamebutton" style="display:none;" onclick="this.blur();">Instalar</button>
+    </div>
+    <div class="right-controls">
+    </div>
+  </div>
+  <!-- Modal de instalación (oculto por defecto) -->
+  <div id="install-modal" style="display:none;">
+    <div class="modal-box">
+      <h3>Instalar Shooter</h3>
+      <p>Para instalar la aplicación en tu dispositivo pulsa el botón <strong>Instalar</strong> si aparece. Si no aparece, sigue los pasos de instalación manual según tu navegador:</p>
+      <ul>
+        <li><strong>Chrome (Android):</strong> menú → "Añadir a pantalla de inicio".</li>
+        <li><strong>Safari (iOS):</strong> pulsar el botón de compartir → "Añadir a pantalla de inicio".</li>
+        <li><strong>Escritorio (Chrome/Edge):</strong> en la barra de direcciones puede aparecer un icono de instalar o en el menú "Instalar".</li>
+      </ul>
+      <div class="modal-actions">
+        <button id="install-modal-close" class="gamebutton">Cerrar</button>
+      </div>
+    </div>
+  </div>
+  <script src="Game.js" type="text/javascript"></script>
+  <script src="Entity.js" type="text/javascript"></script>
+  <script src="Character.js" type="text/javascript"></script>
+  <script src="Player.js" type="text/javascript"></script>
+  <script src="Opponent.js" type="text/javascript"></script>
+  <script src="Shot.js" type="text/javascript"></script>
+  <script src="main.js" type="text/javascript"></script>
+</body>
+
+</html>

@@ -1,0 +1,18 @@
+{
+  "name": "Shooter PWA",
+  "short_name": "Shooter",
+  "description": "Un sencillo juego de disparos convertido en Progressive Web App.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#0b3d91",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "./icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}
