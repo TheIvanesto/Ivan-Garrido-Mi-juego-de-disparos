@@ -3,17 +3,22 @@
   "routes": [
     { "handle": "filesystem" },
 
-    // First try files at root
-    { "src": "/(.*)", "dest": "/$1" },
+    // First try to serve any requested static file from repo root
+    { "src": "/(.*\\..*)", "dest": "/$1" },
 
-    // Try the juego_entrega subfolder if files not at root (useful when uploading that folder)
-    { "src": "/(.*)", "dest": "/juego_entrega/$1" },
+    // If not present at root, try to serve the same path under /juego_entrega
+    { "src": "/(.*\\..*)", "dest": "/juego_entrega/$1" },
 
-    // Ensure service worker and manifest are reachable
+    // Ensure service worker is reachable in both layouts
     { "src": "/sw.js", "dest": "/sw.js" },
-    { "src": "/manifest.json", "dest": "/manifest.json" },
+    { "src": "/sw.js", "dest": "/juego_entrega/sw.js" },
 
-    // fallback to index.html (root) for SPA navigation
-    { "src": "^/(.*)$", "dest": "/index.html" }
+    // Try root index.html first
+    { "src": "/", "dest": "/index.html" },
+    { "src": "/(.*)", "dest": "/index.html" },
+
+    // Fallback to subfolder index if root index is not present
+    { "src": "/", "dest": "/juego_entrega/index.html" },
+    { "src": "/(.*)", "dest": "/juego_entrega/index.html" }
   ]
 }

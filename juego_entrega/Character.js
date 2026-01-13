@@ -28,3 +28,4 @@ class Character extends Entity {
         this.dead = true;
     }
 }
+

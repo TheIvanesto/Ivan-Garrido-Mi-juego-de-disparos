@@ -6,10 +6,10 @@ body {
 	/* Fondo galáctico: degradado + estrellas animadas + nebula */
 	background-color: #041027;
 	background-image: radial-gradient(circle at 20% 20%, rgba(255,255,255,0.03) 0%, transparent 20%),
-						radial-gradient(circle at 80% 60%, rgba(255,255,255,0.02) 0%, transparent 18%),
-						linear-gradient(180deg, #021827 0%, #001022 40%, #000818 100%),
-						radial-gradient(ellipse at 60% 10%, rgba(120,40,160,0.08), transparent 30%),
-						radial-gradient(ellipse at 30% 80%, rgba(10,80,200,0.06), transparent 30%);
+					  radial-gradient(circle at 80% 60%, rgba(255,255,255,0.02) 0%, transparent 18%),
+					  linear-gradient(180deg, #021827 0%, #001022 40%, #000818 100%),
+					  radial-gradient(ellipse at 60% 10%, rgba(120,40,160,0.08), transparent 30%),
+					  radial-gradient(ellipse at 30% 80%, rgba(10,80,200,0.06), transparent 30%);
 	background-blend-mode: screen, screen, normal, overlay, overlay;
 	color: #ffffff;
 	margin: 0;

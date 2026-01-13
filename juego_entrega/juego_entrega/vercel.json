@@ -1,0 +1,19 @@
+{
+  "version": 2,
+  "routes": [
+    { "handle": "filesystem" },
+
+    // First try files at root
+    { "src": "/(.*)", "dest": "/$1" },
+
+    // Try the juego_entrega subfolder if files not at root (useful when uploading that folder)
+    { "src": "/(.*)", "dest": "/juego_entrega/$1" },
+
+    // Ensure service worker and manifest are reachable
+    { "src": "/sw.js", "dest": "/sw.js" },
+    { "src": "/manifest.json", "dest": "/manifest.json" },
+
+    // fallback to index.html (root) for SPA navigation
+    { "src": "^/(.*)$", "dest": "/index.html" }
+  ]
+}
